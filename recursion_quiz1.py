@@ -16,9 +16,17 @@ def has_sum(total, n, m):
         return has_sum(total-n, n, m)
     else:
         return False
+    
+    # 标准答案
+    if total < n and total < m:
+        return False
+    elif total == n or total == m:
+        return True
+    else:
+        return has_sum(total - n, n, m) or has_sum(total - m, n, m)
 
-
-
+    
+    
 if __name__ == '__main__':
     assert has_sum(1, 2, 3) == False, '太小'
     assert has_sum(2, 2, 3) == True, '2*1 + 3*0 = 2'
