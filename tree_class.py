@@ -7,6 +7,8 @@
 # Use by:
 # from ZCodeSnippets.tree_class import Tree
 
+from class_link import Link
+
 class Tree:
     """A tree is a label and a list of branches."""
     def __init__(self, label, branches=[]):
@@ -199,7 +201,46 @@ class Tree:
         # This method needs improvement
         # It will not show True if two tree is mirrored.
 
-    # TODO print all paths
+    # def all_paths(self):
+    #     """return a list of Linked list that are all the paths in the tree
+    #     need to use the Link class as well
+    #     """
+    #     paths = []
+    #     if self.is_leaf():
+    #         paths.append(Link(self.label))
+    #     for b in self.branches:
+    #         for path in b.all_paths():
+    #             paths.append(Link(self.label, path))
+    #     return paths  # can't not print all paths right away as it is a recursive function
+
+    def all_paths(self):
+        """to get all path of a tree in list form in a big list"""
+
+        def helper(tree):
+            """return a list of Linked list that are all the paths in the tree
+            need to use the Link class as well
+            """
+            paths = []
+            if tree.is_leaf():
+                paths.append(tree.label)
+            for b in tree.branches:
+                for path in helper(b):
+                    paths.append([tree.label, path])
+            return paths  # can't not print all paths right away as it is a recursive function
+
+        def flatten(lnk_lst):
+            """To flatten a linked list like list in the form of:
+            [a, [b, [c, d]]]
+            return a flattened list in the form of:
+            [a, b, c, d]
+            """
+            if isinstance(lnk_lst[1], list):
+                return [lnk_lst[0]] + flatten(lnk_lst[1])
+            else:
+                return lnk_lst
+
+        all_paths = helper(self)
+        return [flatten(path) for path in all_paths]
 
     def convert_to_list(self):
         """This converts the tree strcture to a nested list type"""
@@ -210,37 +251,83 @@ class Tree:
             return [[self.label] + i for i in tail]
 
 
-# Fibonacci tree setup by Tree class
-def memo(f):
-    cache = {}
-    def memoized(n):
-        if n not in cache:
-            cache[n] = f(n)
-        return cache[n]
-    return memoized
+# Beautiful vertical tree
+from io import StringIO
+# A StringIO is a file-like object that builds a string instead of printing
+# anything out.
 
-def fib_tree(n):
-    """A Fibonacci tree.
-
-    >>> print(fib_tree(4))
-    3
-      1
-        0
-        1
-      2
-        1
-        1
-          0
-          1
-    """
-    if n == 0 or n == 1:
-        return Tree(n)
+def height(tree):
+    """The height of a tree."""
+    if tree.is_leaf():
+        return 0
     else:
-        left = fib_tree(n-2)
-        right = fib_tree(n-1)
-        fib_n = left.label + right.label
-        return Tree(fib_n, [left, right])
+        return 1 + max([height(b) for b in tree.branches])
 
+def width(tree):
+    """Returns the printed width of this tree."""
+    label_width = len(str(tree.label))
+    w = max(label_width,
+            sum([width(t) for t in tree.branches]) + len(tree.branches) - 1)
+    extra = (w - label_width) % 2
+    return w + extra
+
+def pretty(tree):
+    """Print a tree laid out horizontally rather than vertically."""
+
+    def gen_levels(tr):
+        w = width(tr)
+        label = str(tr.label)
+        label_pad = " " * ((w - len(label)) // 2)
+        yield w
+        print(label_pad, file=out, end="")
+        print(label, file=out, end="")
+        print(label_pad, file=out, end="")
+        yield
+
+        if tr.is_leaf():
+            pad = " " * w
+            while True:
+                print(pad, file=out, end="")
+                yield
+        below = [ gen_levels(b) for b in tr.branches ]
+        L = 0
+        for g in below:
+            if L > 0:
+                print(" ", end="", file=out)
+                L += 1
+            w1 = next(g)
+            left = (w1-1) // 2
+            right = w1 - left - 1
+            mid = L + left
+            print(" " * left, end="", file=out)
+            if mid*2 + 1 == w:
+                print("|", end="", file=out)
+            elif mid*2 > w:
+                print("\\", end="", file=out)
+            else:
+                print("/", end="", file=out)
+            print(" " * right, end="", file=out)
+            L += w1
+        print(" " * (w - L), end="", file=out)
+        yield
+        while True:
+            started = False
+            for g in below:
+                if started:
+                    print(" ", end="", file=out)
+                next(g);
+                started = True
+            print(" " * (w - L), end="", file=out)
+            yield
+
+    out = StringIO()
+    h = height(tree)
+    g = gen_levels(tree)
+    next(g)
+    for i in range(2*h + 1):
+        next(g)
+        print(file=out)
+    print(out.getvalue(), end="")
 
 
 if __name__ == '__main__':
@@ -378,6 +465,17 @@ if __name__ == '__main__':
 
     print(T == T_copy) # >>> True
 
+    # Print all paths
+    X = Tree(1, [Tree(2, [Tree(4), Tree(5)]), Tree(3, [Tree(6), Tree(7, [Tree(8), Tree(9)])])])
+    print('\nX tree:')
+    print(X)
+    path_list = X.all_paths()
+    print('All paths in X tree:')
+    for i in path_list:
+        print(i)
+    print('')
+
+
     # T = Tree(1, [Tree(2, [Tree(4), Tree(5, [Tree(8), Tree(9)])]), Tree(3, [Tree(6), Tree(7)])])
 
     T0 = Tree(1)
@@ -392,6 +490,45 @@ if __name__ == '__main__':
     T3 = Tree(1, [Tree(2, [Tree(4), Tree(5)]), Tree(3, [Tree(6), Tree(7, [Tree(8), Tree(9), Tree(10)])])])
     print('T3', T3.convert_to_list())
 
+
+
+
+
+# Other Tree related:
+
+# Fibonacci tree setup by Tree class
+def memo(f):
+    cache = {}
+    def memoized(n):
+        if n not in cache:
+            cache[n] = f(n)
+        return cache[n]
+    return memoized
+
+def fib_tree(n):
+    """A Fibonacci tree.
+
+    >>> print(fib_tree(4))
+    3
+      1
+        0
+        1
+      2
+        1
+        1
+          0
+          1
+    """
+    if n == 0 or n == 1:
+        return Tree(n)
+    else:
+        left = fib_tree(n-2)
+        right = fib_tree(n-1)
+        fib_n = left.label + right.label
+        return Tree(fib_n, [left, right])
+
+
+if __name__ == '__main__':
     ft = fib_tree(6)
     print(ft)
     # >>>
@@ -497,9 +634,8 @@ if __name__ == '__main__':
     #         None
 
 
-# Extension Application
 
-# Fib Tree
+# Fib Tree by Binary tree
 def fib_tree(n):
     """Fibonacci binary tree.
 
@@ -574,6 +710,7 @@ if __name__ == '__main__':
     #       None
     #       None
 
+
 # Sets as binary search trees
 
 def contains(s, v):
@@ -615,3 +752,88 @@ def adjoin(s, v):
         return BTree(s.label, s.left, adjoin(s.right, v))
     elif s.label > v:
         return BTree(s.label, adjoin(s.left, v), s.right)
+
+
+# Factor tree
+def factor_tree(n):
+    """
+    Returns a factor tree.
+    Recall that in a factor tree, multiplying the leaves together is the prime factorization of the root, n
+    """
+    for i in range(2, n):
+        if n % i == 0:
+            return Tree(n, [factor_tree(i), factor_tree(n // i)])
+    return Tree(n)
+
+if __name__ == '__main__':
+    print(factor_tree(20))
+    # >>>
+    # 20
+      # 2
+      # 10
+        # 2
+        # 5
+
+
+
+# Containing search
+def contains(elem, n, t):
+    """
+    >>> t1 = Tree(1, [Tree(1, [Tree(2)])])
+    >>> contains(1, 2, t1)
+    True
+    >>> contains(2, 2, t1)
+    False
+    >>> contains(2, 1, t1)
+    True
+    >>> t2 = Tree(1, [Tree(2), Tree(1, [Tree(1), Tree(2)])])
+    >>> contains(1, 3, t2)
+    True
+    >>> contains(2, 2, t2) # Not on a path
+    False
+    """
+    if n == 0:
+        return True
+    elif t.is_leaf() and n == 1:
+        return t.label == elem
+    elif t.label == elem:
+        return True in [contains(elem, n - 1, b) for b in t.branches]
+    else:
+        return True in [contains(elem, n, b) for b in t.branches]
+
+
+
+# Siblings
+def siblings(t):
+    """Return a list of the labels of all nodes that have siblings in t.
+    >>> a = Tree(4, [Tree(5), Tree(6), Tree(7, [Tree(8)])])
+    >>> siblings(Tree(1, [Tree(3, [a]), Tree(9, [Tree(10)])]))
+    [3, 9, 5, 6, 7]
+    """
+    result = [b.label for b in t.branches if len(t.branches) > 1]
+    for b in t.branches:
+        result += siblings(b)
+    return result
+
+
+# Implement the Sib class that inherits from Tree.
+# In addition to label and branches, a Sib instance t has an attribute siblings that stores the number of siblings t has in Sib trees containing t as a node.
+# Assume that the branches of a Sib instance will never be mutated or re-assigned.
+
+class Sib(Tree):
+    """A tree that knows how many siblings it has.
+    >>> a = Sib(4, [Sib(5), Sib(6), Sib(7, [Sib(8)])])
+    >>> a.label
+    4
+    >>> a.branches[1].label
+    6
+    >>> a.siblings
+    0
+    >>> a.branches[1].siblings
+    2
+    """
+    def __init__(self, label, branches=[]):
+        Tree.__init__(self, label, branches)
+        self.siblings = 0
+        for b in self.branches:
+            b.siblings = len(self.branches) - 1
