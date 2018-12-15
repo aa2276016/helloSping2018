@@ -11,8 +11,17 @@ def stair(lst):
     Returns: a integer
 
     """
-    pass
+    def find_max(n):
+        if n == -1:
+            return 0  # 假设开头必须为0
+        elif n == 0:
+            return lst[n]
+        elif 0 < n < len(lst):
+            return max(find_max(n-1), find_max(n-2)) + lst[n]
+        elif n == len(lst):
+            return max(find_max(n - 1), find_max(n - 2)) + 0  # 假设结尾也必须是0
 
+    return find_max(len(lst))
 
 if __name__ == '__main__':
     assert stair([5, -3, -1, 2]) == 6, '1st test, (5-1+2=6)'
